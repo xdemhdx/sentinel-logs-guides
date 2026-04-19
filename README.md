@@ -19,4 +19,4 @@ Each integration folder contains:
 
 ## Maintained by
 
-Wizard Cyber SOC
+Omar Abdulaziz

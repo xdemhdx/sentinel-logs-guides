@@ -3,7 +3,7 @@
 
 **Version:** 1.0  
 **Date:** April 2026  
-**Prepared by:** Wizard Cyber SOC
+**Prepared by:** Omar Abdulaziz
 
 ---
 
@@ -570,4 +570,4 @@ Use this checklist to confirm the integration is working end-to-end:
 
 ---
 
-*Guide prepared by Wizard Cyber SOC. For questions contact your assigned SOC engineer.*
+*Community guide by Omar Abdulaziz.*
