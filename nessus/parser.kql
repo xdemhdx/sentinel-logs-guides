@@ -1,0 +1,49 @@
+// NessusLogs - KQL Parser
+// Save as workspace function with alias: NessusLogs
+// Category: NessusOperational
+
+Syslog
+| where ProcessName == "nessus" and Facility == "local5"
+| extend LogType = case(
+    SyslogMessage matches regex @'^\[\w{3} \w{3}',                                         "ScanActivity",
+    SyslogMessage matches regex @'^\[\d{2}/\w{3}/\d{4}:\d{2}:\d{2}:\d{2}',               "BackendLog",
+    SyslogMessage matches regex @'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}',                  "WebAccess",
+    "DaemonLog"
+)
+| extend ScanUser        = extract(@'\[user=([^\]]+)\]', 1, SyslogMessage)
+| extend ScanName        = extract(@'\[name=([^\]]+)\]', 1, SyslogMessage)
+| extend ScanID          = extract(@'\[scan=([^\]]+)\]', 1, SyslogMessage)
+| extend TargetIP        = extract(@'\[target=([^\]]+)\]', 1, SyslogMessage)
+| extend PluginFile      = extract(@'\[plugin=([^\]]+)\]', 1, SyslogMessage)
+| extend PluginID        = extract(@'\[plugin_id=([^\]]+)\]', 1, SyslogMessage)
+| extend ScanDuration    = toreal(extract(@'\[duration=([0-9.]+)\]', 1, SyslogMessage))
+| extend EventStatus     = trim(' ', extract(@' : (.+)$', 1, SyslogMessage))
+| extend HostsUp         = toint(extract(@'Finished: (\d+) of', 1, EventStatus))
+| extend HostsTotal      = toint(extract(@'of (\d+) hosts', 1, EventStatus))
+| extend HostsDead       = toint(extract(@'(\d+) dead', 1, EventStatus))
+| extend HostsTimeout    = toint(extract(@'(\d+) timeout', 1, EventStatus))
+| extend HostsAborted    = toint(extract(@'(\d+) aborted', 1, EventStatus))
+| extend BackendLogLevel  = iif(LogType == "BackendLog", extract(@'^\[.*?\] \[(\w+)\]', 1, SyslogMessage), "")
+| extend BackendService   = iif(LogType == "BackendLog", extract(@'^\[.*?\] \[\w+\] \[([^\]]+)\]', 1, SyslogMessage), "")
+| extend BackendMessage   = iif(LogType == "BackendLog", trim(' ', extract(@'^\[.*?\] \[\w+\] (?:\[[^\]]+\] )?(.+)$', 1, SyslogMessage)), "")
+| extend BackendUsername  = extract(@'username=([^,\] ]+)', 1, SyslogMessage)
+| extend BackendSourceIP  = extract(@'from ip: (\S+)', 1, SyslogMessage)
+| extend BackendScanName  = extract(@"Started scan '([^']+)'", 1, SyslogMessage)
+| extend BackendScanID    = extract(@"as '([a-f0-9-]+)'", 1, SyslogMessage)
+| extend WebSrcIP        = iif(LogType == "WebAccess", extract(@'^(\S+)', 1, SyslogMessage), "")
+| extend WebMethod       = iif(LogType == "WebAccess", extract(@'"(GET|POST|PUT|DELETE|PATCH|HEAD) ', 1, SyslogMessage), "")
+| extend WebUriPath      = iif(LogType == "WebAccess", extract(@'"(?:GET|POST|PUT|DELETE|PATCH|HEAD) ([^\s"]+)', 1, SyslogMessage), "")
+| extend WebStatusCode   = iif(LogType == "WebAccess", toint(extract(@'" (\d{3}) ', 1, SyslogMessage)), int(null))
+| extend WebUserAgent    = iif(LogType == "WebAccess", extract(@'"((?:Mozilla|curl|python|Go-http)[^"]*)"[^"]*$', 1, SyslogMessage), "")
+| extend WebElapsedSec   = iif(LogType == "WebAccess", toreal(extract(@'Elapsed=([0-9.]+)', 1, SyslogMessage)), real(null))
+| project
+    TimeGenerated,
+    Computer,
+    LogType,
+    ScanUser, ScanName, ScanID, TargetIP,
+    PluginFile, PluginID, ScanDuration, EventStatus,
+    HostsUp, HostsTotal, HostsDead, HostsTimeout, HostsAborted,
+    BackendLogLevel, BackendService, BackendMessage,
+    BackendUsername, BackendSourceIP, BackendScanName, BackendScanID,
+    WebSrcIP, WebMethod, WebUriPath, WebStatusCode, WebUserAgent, WebElapsedSec,
+    SyslogMessage
