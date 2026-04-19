@@ -1,0 +1,22 @@
+{
+  "kind": "Scheduled",
+  "properties": {
+    "displayName": "Nessus - Spike in Unauthorized Web UI Requests",
+    "description": "Detects a spike in 403 Forbidden responses to the Nessus web UI from a single source IP. May indicate an unauthenticated user probing API endpoints or attempting unauthorized access.",
+    "severity": "Medium",
+    "enabled": true,
+    "query": "NessusLogs\n| where LogType == \"WebAccess\" and WebStatusCode == 403\n| summarize ForbiddenCount=count(), Paths=make_set(WebUriPath, 20) by WebSrcIP, bin(TimeGenerated, 5m)\n| where ForbiddenCount >= 10\n| extend IPCustomEntity = WebSrcIP",
+    "queryFrequency": "PT5M",
+    "queryPeriod": "PT5M",
+    "triggerOperator": "GreaterThan",
+    "triggerThreshold": 0,
+    "tactics": ["Discovery"],
+    "techniques": ["T1595"],
+    "entityMappings": [
+      {
+        "entityType": "IP",
+        "fieldMappings": [{ "identifier": "Address", "columnName": "WebSrcIP" }]
+      }
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "kind": "Scheduled",
+  "properties": {
+    "displayName": "Nessus - Scanner Service Unexpected Restart",
+    "description": "Detects when the Nessus daemon restarts unexpectedly. Frequent restarts may indicate instability, tampering, or a crash caused by resource exhaustion or attack.",
+    "severity": "Low",
+    "enabled": true,
+    "query": "NessusLogs\n| where LogType == \"ScanActivity\" and EventStatus has \"received signal\"\n| union (\n    NessusLogs\n    | where LogType == \"BackendLog\" and BackendMessage has_any (\"started\", \"Starting\") and BackendService == \"\"\n)\n| summarize RestartCount=count() by Computer, bin(TimeGenerated, 1h)\n| where RestartCount >= 2\n| extend HostCustomEntity = Computer",
+    "queryFrequency": "PT1H",
+    "queryPeriod": "PT1H",
+    "triggerOperator": "GreaterThan",
+    "triggerThreshold": 0,
+    "tactics": ["Impact"],
+    "techniques": ["T1489"],
+    "entityMappings": [
+      {
+        "entityType": "Host",
+        "fieldMappings": [{ "identifier": "HostName", "columnName": "Computer" }]
+      }
+    ]
+  }
+}

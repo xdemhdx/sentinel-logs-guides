@@ -1,0 +1,22 @@
+{
+  "kind": "Scheduled",
+  "properties": {
+    "displayName": "Nessus - Scan Launched Outside Business Hours",
+    "description": "Detects when a Nessus scan is started outside business hours (before 07:00 or after 19:00 UTC). Scans launched at unusual times may indicate unauthorized use of the scanner.",
+    "severity": "Medium",
+    "enabled": true,
+    "query": "NessusLogs\n| where LogType == \"BackendLog\" and isnotempty(BackendScanName)\n| extend HourOfDay = datetime_part(\"Hour\", TimeGenerated)\n| where HourOfDay < 7 or HourOfDay >= 19\n| project TimeGenerated, BackendUsername, BackendScanName, BackendScanID, HourOfDay\n| extend AccountCustomEntity = BackendUsername",
+    "queryFrequency": "PT15M",
+    "queryPeriod": "PT15M",
+    "triggerOperator": "GreaterThan",
+    "triggerThreshold": 0,
+    "tactics": ["Execution"],
+    "techniques": ["T1053"],
+    "entityMappings": [
+      {
+        "entityType": "Account",
+        "fieldMappings": [{ "identifier": "Name", "columnName": "BackendUsername" }]
+      }
+    ]
+  }
+}

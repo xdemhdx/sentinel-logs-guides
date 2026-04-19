@@ -1,0 +1,26 @@
+{
+  "kind": "Scheduled",
+  "properties": {
+    "displayName": "Nessus - Login from New or Unseen IP Address",
+    "description": "Detects successful logins to the Nessus web UI from an IP address not seen in the previous 14 days. May indicate access from an unexpected location or compromised credentials.",
+    "severity": "Medium",
+    "enabled": true,
+    "query": "let lookback = 14d;\nlet knownIPs = NessusLogs\n| where TimeGenerated between (ago(lookback) .. ago(1h))\n| where LogType == \"BackendLog\" and BackendMessage has \"successful login\"\n| distinct BackendSourceIP;\nNessusLogs\n| where TimeGenerated > ago(1h)\n| where LogType == \"BackendLog\" and BackendMessage has \"successful login\"\n| where BackendSourceIP !in (knownIPs)\n| project TimeGenerated, BackendUsername, BackendSourceIP\n| extend AccountCustomEntity = BackendUsername, IPCustomEntity = BackendSourceIP",
+    "queryFrequency": "PT1H",
+    "queryPeriod": "P14D",
+    "triggerOperator": "GreaterThan",
+    "triggerThreshold": 0,
+    "tactics": ["InitialAccess"],
+    "techniques": ["T1078"],
+    "entityMappings": [
+      {
+        "entityType": "Account",
+        "fieldMappings": [{ "identifier": "Name", "columnName": "BackendUsername" }]
+      },
+      {
+        "entityType": "IP",
+        "fieldMappings": [{ "identifier": "Address", "columnName": "BackendSourceIP" }]
+      }
+    ]
+  }
+}

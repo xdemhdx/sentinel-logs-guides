@@ -1,0 +1,22 @@
+{
+  "kind": "Scheduled",
+  "properties": {
+    "displayName": "Nessus - Backend Error Spike",
+    "description": "Detects a spike in backend errors from the Nessus service. Multiple errors in a short window may indicate a misconfiguration, resource issue, or active exploitation attempt against the scanner API.",
+    "severity": "Low",
+    "enabled": true,
+    "query": "NessusLogs\n| where LogType == \"BackendLog\" and BackendLogLevel == \"error\"\n| summarize ErrorCount=count(), Errors=make_set(BackendMessage, 10) by Computer, bin(TimeGenerated, 15m)\n| where ErrorCount >= 5\n| extend HostCustomEntity = Computer",
+    "queryFrequency": "PT15M",
+    "queryPeriod": "PT15M",
+    "triggerOperator": "GreaterThan",
+    "triggerThreshold": 0,
+    "tactics": ["Impact"],
+    "techniques": ["T1499"],
+    "entityMappings": [
+      {
+        "entityType": "Host",
+        "fieldMappings": [{ "identifier": "HostName", "columnName": "Computer" }]
+      }
+    ]
+  }
+}

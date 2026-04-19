@@ -1,0 +1,22 @@
+{
+  "kind": "Scheduled",
+  "properties": {
+    "displayName": "Nessus - Brute Force Against Web UI",
+    "description": "Detects multiple failed login attempts to the Nessus web UI from the same source IP within a short window. May indicate credential stuffing or brute force against the scanner.",
+    "severity": "Medium",
+    "enabled": true,
+    "query": "NessusLogs\n| where LogType == \"WebAccess\"\n| where WebUriPath has_any (\"/session\", \"/token\") and WebMethod == \"POST\" and WebStatusCode == 401\n| summarize FailedAttempts=count() by WebSrcIP, bin(TimeGenerated, 10m)\n| where FailedAttempts >= 5\n| extend AccountCustomEntity = WebSrcIP, IPCustomEntity = WebSrcIP",
+    "queryFrequency": "PT10M",
+    "queryPeriod": "PT10M",
+    "triggerOperator": "GreaterThan",
+    "triggerThreshold": 0,
+    "tactics": ["CredentialAccess"],
+    "techniques": ["T1110"],
+    "entityMappings": [
+      {
+        "entityType": "IP",
+        "fieldMappings": [{ "identifier": "Address", "columnName": "WebSrcIP" }]
+      }
+    ]
+  }
+}
